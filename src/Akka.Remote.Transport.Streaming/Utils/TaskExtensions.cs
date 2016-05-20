@@ -13,6 +13,34 @@ namespace Akka.Remote.Transport.Streaming.Utils
 {
     internal static class TaskExtensions
     {
+        public static Task WithTimeout(this Task task, TimeSpan timeout)
+        {
+            if (timeout == Timeout.InfiniteTimeSpan)
+                return task;
+
+            CancellationTokenSource cancel = new CancellationTokenSource(timeout);
+
+            var t = task.WithCancellation(cancel.Token);
+
+            t.ContinueWithSynchronously((_, state) => ((CancellationTokenSource)state).Dispose(), cancel);
+
+            return t;
+        }
+
+        public static Task<T> WithTimeout<T>(this Task<T> task, TimeSpan timeout)
+        {
+            if (timeout == Timeout.InfiniteTimeSpan)
+                return task;
+
+            CancellationTokenSource cancel = new CancellationTokenSource(timeout);
+
+            var t = task.WithCancellation(cancel.Token);
+
+            t.ContinueWithSynchronously((_, state) => ((CancellationTokenSource)state).Dispose(), cancel);
+
+            return t;
+        }
+
         public static Task WithCancellation(this Task task, CancellationToken ct)
         {
             TaskCompletionSource<object> completion = new TaskCompletionSource<object>();
@@ -104,5 +132,15 @@ namespace Akka.Remote.Transport.Streaming.Utils
 
         public static void IgnoreResult<T>(this Task<T> task)
         { }
+
+        public static Task ContinueWithSynchronously(this Task task, Action<Task> continuationAction)
+        {
+            return task.ContinueWith(continuationAction, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+        }
+
+        public static Task ContinueWithSynchronously(this Task task, Action<Task, object> continuationAction, object state)
+        {
+            return task.ContinueWith(continuationAction, state, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+        }
     }
 }

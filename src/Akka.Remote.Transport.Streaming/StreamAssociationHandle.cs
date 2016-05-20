@@ -406,7 +406,7 @@ namespace Akka.Remote.Transport.Streaming
                     if (!gracefulStop)
                         return false;
 
-                    _settings.ShutdownOutput(_stream, _state);
+                    _settings.ShutdownStreamGracefully(_stream, _state);
 
                     gracefulStop = await _readLoop.WithCancellation(cancel.Token);
 
